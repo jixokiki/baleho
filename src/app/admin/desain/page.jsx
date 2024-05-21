@@ -2,8 +2,10 @@
 import useAuth from "@/app/hooks/useAuth";
 import useProduct from "@/app/hooks/useProduct";
 import CardItem from "@/components/CardItem";
+import CardItem2 from "@/components/CardItem2";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import NavbarAdmin from "@/components/NavbarAdmin";
 import { db } from "@/firebase/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -288,7 +290,7 @@ import React, { useEffect, useState } from "react";
 // import { useRouter } from "next/router";
 // import { db } from "@/firebase/firebase";
 
-const Product = () => {
+const Desain = () => {
   const { user, userProfile } = useAuth();
   const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -299,8 +301,8 @@ const Product = () => {
   const { isInCart, removeFromCart, addToCart } = useProduct();
 
   useEffect(() => {
-    if (user && userProfile.role === "admin") {
-      router.push("/admin");
+    if (user && userProfile.role === "user") {
+      router.push("/");
     }
   }, [user, userProfile, router]);
 
@@ -348,7 +350,7 @@ const Product = () => {
   //USE EFFECT YANG FIX BUAT ALERT
   useEffect(() => {
     const unsubProduct = onSnapshot(
-      collection(db, "products"),
+      collection(db, "desain"),
       (snapshot) => {
         let list = [];
         snapshot.docs.forEach((doc) => {
@@ -433,7 +435,7 @@ const Product = () => {
   
   return (
     <div>
-      <Navbar />
+      <NavbarAdmin />
       <div className="p-8 md:p-24 mt-10">
         <div className="flex justify-between mb-10">
           <h2 className="text-3xl mb-3">All Products</h2>
@@ -470,16 +472,24 @@ const Product = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 place-items-center gap-6">
           {filteredData.map((product) => (
-            <CardItem
-              key={product.id}
-              imageUrl={product.image}
-              fakultas={product.category}
-              judul={product.title}
-              deskripsi={product.description}
-              harga={product.price}
-              addToCart={() => addToCart(product)}
-              removeFromCart={() => removeFromCart(product)}
-              isInCart={isInCart(product.id)}
+            // <CardItem
+            //   key={product.id}
+            //   imageUrl={product.image}
+            //   fakultas={product.category}
+            //   judul={product.title}
+            //   deskripsi={product.description}
+            //   harga={product.price}
+            // //   addToCart={() => addToCart(product)}
+            //   removeFromCart={() => removeFromCart(product)}
+            //   isInCart={isInCart(product.id)}
+            // />
+            <CardItem2
+                key={product.id}
+               imageUrl={product.image}
+               fakultas={product.category}
+               judul={product.title}
+               deskripsi={product.description}
+               harga={product.price}
             />
           ))}
         </div>
@@ -489,4 +499,4 @@ const Product = () => {
   );
 };
 
-export default Product;
+export default Desain;

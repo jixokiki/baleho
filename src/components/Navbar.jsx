@@ -50,6 +50,16 @@ const Navbar = () => {
               </Link>
             </li>
           )}
+          {user && (
+            <li className="md:mr-3">
+              <Link
+                href={"/desain"}
+                className="px-4 py-3  transition-all duration-300 hover:bg-teal-500 hover:text-white rounded"
+              >
+                Desain
+              </Link>
+            </li>
+          )}
           <li className="md:mr-3">
             <Link
               href={"/service"}
@@ -119,6 +129,11 @@ const Navbar = () => {
         {user && (
           <li className="md:mr-3">
             <Link href={"/product"}>Product</Link>
+          </li>
+        )}
+        {user && (
+          <li className="md:mr-3">
+            <Link href={"/desain"}>Desain</Link>
           </li>
         )}
         <li className="md:mr-3">

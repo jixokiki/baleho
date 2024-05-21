@@ -2,6 +2,7 @@
 import useAuth from "@/app/hooks/useAuth";
 import NavbarAdmin from "@/components/NavbarAdmin";
 import { db, storage } from "@/firebase/firebase";
+import Navbar from "@/components/Navbar";
 import {
   collection,
   deleteDoc,
@@ -19,12 +20,12 @@ import {
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
-const Product = () => {
+const Desain = () => {
   const { user, userProfile } = useAuth();
   const router = useRouter();
   useEffect(() => {
-    if (user && userProfile.role === "user") {
-      router.push("/");
+    if (user && userProfile.role === "admin") {
+      router.push("/admin");
     }
   }, [user, userProfile, router]);
   const [file, setFile] = useState(null);
@@ -38,7 +39,7 @@ const Product = () => {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      collection(db, "products"),
+      collection(db, "desain"),
       (snapshot) => {
         let list = [];
         snapshot.docs.forEach((doc) => {
@@ -53,7 +54,7 @@ const Product = () => {
     const uploadFile = async () => {
       const storageRef = ref(
         storage,
-        "products/" +
+        "desain/" +
           new Date().getTime() +
           file.name.replace(" ", "%20") +
           "UEU"
@@ -105,7 +106,7 @@ const Product = () => {
 
     try {
       await setDoc(
-        doc(db, "products", new Date().getTime() + productData.title + "UEU"),
+        doc(db, "desain", new Date().getTime() + productData.title + "UEU"),
         {
           ...productData,
           timeStamp: serverTimestamp(),
@@ -124,7 +125,7 @@ const Product = () => {
 
   const handleDelete = async (id, image) => {
     try {
-      await deleteDoc(doc(db, "products", id));
+      await deleteDoc(doc(db, "desain", id));
       setData(data.filter((item) => item.id !== id));
 
       const desertRef = ref(storage, image);
@@ -135,11 +136,10 @@ const Product = () => {
   };
 
   return (
-    <div className="w-[87%] mx-auto mt-32">
-      <NavbarAdmin />
-
-      <div className="flex justify-between items-center gap-3 mb-10">
-        <h1 className="text-3xl font-semibold mb-3">Product List</h1>
+    <div className="w-[100%] mx-auto mt-32">
+      <Navbar/>
+      <div className=" w-[90%] flex justify-between items-center gap-3 mb-10">
+        <h1 className="w[50%] mx-auto text-3xl font-semibold mb-3" >Desain List</h1>
         <input
           type="text"
           placeholder="Search here"
@@ -148,7 +148,7 @@ const Product = () => {
         <label className="form-control w-full max-w-xs">
           <select className="select select-bordered">
             <option>All</option>
-            <option>Fikom</option>
+            {/* <option>Fikom</option>
             <option>Fasilkom</option>
             <option>DKV</option>
             <option>Fasilkom</option>
@@ -161,14 +161,14 @@ const Product = () => {
             <option>Baleho 7</option>
             <option>Baleho 8</option>
             <option>Baleho 9</option>
-            <option>Baleho 10</option>
+            <option>Baleho 10</option> */}
           </select>
         </label>
         <button
           className="btn bg-teal-600 hover:bg-teal-500 text-white"
           onClick={() => document.getElementById("addProductModal").showModal()}
         >
-          Add Product
+          Add Desain
         </button>
         {/* Modal add user */}
         <dialog id="addProductModal" className="modal">
@@ -292,7 +292,7 @@ const Product = () => {
         </dialog>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto ">
         <table className="table">
           {/* head */}
           <thead>
@@ -343,4 +343,4 @@ const Product = () => {
   );
 };
 
-export default Product;
+export default Desain;
