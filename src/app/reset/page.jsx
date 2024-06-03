@@ -1,17 +1,27 @@
 "use client";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { auth, db } from "@/firebase/firebase";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; // Menggunakan next/router bukan next/navigation
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import useNavigation from "../hooks/useNavigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { useState } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 
-const SignIn = () => {
+const ResetPassword = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -38,6 +48,9 @@ const SignIn = () => {
       setIsLoading(true);
       e.preventDefault();
       let newErrors = {};
+      if (!formData.fullName) {
+        newErrors.fullName = "Full name is required";
+      }
       if (!formData.email) {
         newErrors.email = "Email is required";
       } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -45,40 +58,58 @@ const SignIn = () => {
       }
       if (!formData.password) {
         newErrors.password = "Password is required";
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
       }
       setErrors(newErrors);
-
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-      const user = userCredential.user;
-      if (user) {
-        const docRef = doc(db, "users", user.uid);
-        await updateDoc(docRef, {
-          status: "online",
-        });
-        const docSnap = await getDoc(docRef);
+  
+      if (Object.keys(newErrors).length === 0) {
+        // Cek apakah email sudah ada di Firestore
+        const userDocRef = doc(db, "users", formData.email);
+        const docSnap = await getDoc(userDocRef);
+  
         if (docSnap.exists()) {
-          if (docSnap.data().role == "user") {
-            router.push("/");
-          } else if (docSnap.data().role == "admin") {
-            router.push("/admin");
-          }
-          localStorage.setItem("userProfile", JSON.stringify(docSnap.data()));
+          // Jika pengguna sudah ada, update data pengguna
+          await updateDoc(userDocRef, {
+            fullName: formData.fullName,
+            password: formData.password, // perhatikan bahwa menyimpan password di sini harus dilakukan dengan hati-hati, biasanya lebih baik hanya menyimpan hashed password atau menggunakan auth credential firebase.
+            status: "online",
+            timeStamp: serverTimestamp(),
+          });
+        } else {
+          // Jika pengguna belum ada, buat pengguna baru
+          const userData = {
+            fullName: formData.fullName,
+            role: "user",
+            email: formData.email,
+            password: formData.password,
+            status: "online",
+          };
+  
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            formData.email,
+            formData.password
+          );
+  
+          await setDoc(doc(db, "users", userCredential.user.uid), {
+            ...userData,
+            timeStamp: serverTimestamp(),
+          });
         }
+  
+        // Setelah selesai, arahkan pengguna ke halaman utama
+        router.push("/");
+        setToastMessage(null);
       }
     } catch (error) {
-      console.log(error.message);
+      console.error("Error registering user:", error.message);
       let errorMessage = error.message;
-      if (errorMessage == "Firebase: Error (auth/invalid-email).") {
+      if (errorMessage === "Firebase: Error (auth/invalid-email).") {
         errorMessage = "Email yang anda masukkan salah";
-      } else if ((errorMessage = "Firebase: Error (auth/missing-password).")) {
+      } else if (errorMessage === "Firebase: Error (auth/missing-password).") {
         errorMessage = "Password anda salah";
-      } else if (
-        (errorMessage = "Firebase: Error (auth/invalid-credential).")
-      ) {
+      } else if (errorMessage === "Firebase: Error (auth/invalid-credential).") {
         errorMessage = "Email atau password salah";
       }
       setToastMessage(errorMessage);
@@ -86,6 +117,7 @@ const SignIn = () => {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="mt-10">
@@ -95,7 +127,20 @@ const SignIn = () => {
           onSubmit={handleSubmit}
           className="max-w-xl mx-auto rounded-xl md:border p-8 md:shadow-lg"
         >
-          <h2 className="text-center text-2xl font-semibold mb-10">Sign In</h2>
+          <h2 className="text-center text-2xl font-semibold mb-10">Reset Password</h2>
+          <div className="mb-4">
+            <label className="block mb-1">Full Name</label>
+            <input
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+            />
+            {errors.fullName && (
+              <p className="text-red-500">{errors.fullName}</p>
+            )}
+          </div>
           <div className="mb-4">
             <label className="block mb-1">Email</label>
             <input
@@ -125,6 +170,19 @@ const SignIn = () => {
               <p className="text-red-500">{errors.password}</p>
             )}
           </div>
+          <div className="mb-4">
+            <label className="block mb-1">Confirm Password</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+            />
+            {errors.confirmPassword && (
+              <p className="text-red-500">{errors.confirmPassword}</p>
+            )}
+          </div>
 
           {toastMessage && (
             <div className="toast toast-end">
@@ -141,18 +199,12 @@ const SignIn = () => {
             } transition-all duration-300 hover:bg-gray-900 hover:text-white px-6 py-4 rounded w-full`}
             disabled={isLoading}
           >
-            {isLoading ? "Signing In..." : "Sign In"}
+            {isLoading ? "Signing Up..." : "Sign Up"}
           </button>
           <p className="mt-10">
-            Don't have an account?{" "}
-            <Link href={"/sign-up"} className="text-indigo-500 hover:underline">
-              Sign up here
-            </Link>
-          </p>
-          <p className="mt-10">
-            please reset your password!!{" "}
-            <Link href={"/reset"} className="text-indigo-500 hover:underline">
-              reset
+            Already have an account?{" "}
+            <Link href={"/sign-in"} className="text-indigo-500 hover:underline">
+              Sign in here
             </Link>
           </p>
         </form>
@@ -161,4 +213,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default ResetPassword;
